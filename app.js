@@ -8,7 +8,7 @@ const client = new Discord.Client();
 const axios = require('axios');
 
 client.once('ready', () => {
-    console.log(chalk.blue("Logged into discord"));
+    console.log(chalk.blue("Logged into Discord"));
 })
 
 const prefix = '!';

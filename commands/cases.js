@@ -1,22 +1,24 @@
 require('dotenv').config({ path: '.env' });
 
 const axios = require('axios');
-
 const mapbox_token = process.env.MAPBOX_TOKEN;
-
-const center = 2092;
-const radius = 15;
 
 module.exports = (message) => {
     const args = message.content.slice(1).split(/ +/);
-    const postcode = args[1];
-    const days = args[2];
+
+    let postcode = args[1];
+    let days = args[2];
+    let radius = args[3];
+
     if (!postcode) {
         message.channel.send("Please enter a postcode")
         return;
     }
     if (!days) {
         days = 14;
+    }
+    if (!radius) {
+        radius = 15;
     }
     getCases(postcode, days).then((val) => {
         let content = "";
@@ -29,6 +31,10 @@ module.exports = (message) => {
             }
         })
         overLimit ? content = content + "+ More" : null; 
+        if (content.length == 0) {
+            message.channel.send("No cases, either an error or this is all over...")
+            return;
+        }
         message.channel.send(content)
     })
 }
@@ -47,7 +53,6 @@ async function getCases(postcode, days) {
         if (date >= (Date.now() - (days*24*60*60*1000))) {
             res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${item[2]}.json?access_token=${mapbox_token}&country=au&types=postcode`);
             if (inRadius(res.data.features[0].center[1], res.data.features[0].center[0], center_coords[1], center_coords[0])) {
-                console.log(res.data.features[0].context[0].text);
                 results.push({postcode: item[2], date: item[1], suburb: res.data.features[0].context[0].text });
             }
         }

@@ -20,17 +20,20 @@ module.exports = (message) => {
     if (!radius) {
         radius = 15;
     }
-    getCases(postcode, days).then((val) => {
+    getCases(postcode, days, radius).then((val) => {
         let content = "";
         let overLimit = false;
         let sortedVal = val.sort((a, b) => new Date(b.date) - new Date(a.date))
         sortedVal.map(item => {
             if (content.length < 1950) {
-                content = content + `${item.postcode} - ${item.date} - ${item.suburb}\n`;
+                content = content + `${item.suburb} (${item.postcode}) - ${item.date}\n`;
+            } else {
                 overLimit = true;
             }
         })
-        overLimit ? content = content + "+ More" : null; 
+        if (overLimit) {
+            content = content + "+ More";
+        }
         if (content.length == 0) {
             message.channel.send("No cases, either an error or this is all over...")
             return;
@@ -39,7 +42,7 @@ module.exports = (message) => {
     })
 }
 
-async function getCases(postcode, days) {
+async function getCases(postcode, days, radius) {
     let results = [];
 
     let res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${postcode}.json?access_token=${mapbox_token}&country=au&types=postcode`);
@@ -52,7 +55,7 @@ async function getCases(postcode, days) {
         let date = Date.parse(item[1]);
         if (date >= (Date.now() - (days*24*60*60*1000))) {
             res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${item[2]}.json?access_token=${mapbox_token}&country=au&types=postcode`);
-            if (inRadius(res.data.features[0].center[1], res.data.features[0].center[0], center_coords[1], center_coords[0])) {
+            if (inRadius(radius, res.data.features[0].center[1], res.data.features[0].center[0], center_coords[1], center_coords[0])) {
                 results.push({postcode: item[2], date: item[1], suburb: res.data.features[0].context[0].text });
             }
         }
@@ -61,7 +64,7 @@ async function getCases(postcode, days) {
 }
 
 
-function inRadius (lat1, long1, lat2, long2) {
+function inRadius (radius, lat1, long1, lat2, long2) {
     const r = 6371;
 
     let lat = degToRad(lat2 - lat1);

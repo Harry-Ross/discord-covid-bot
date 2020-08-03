@@ -24,6 +24,7 @@ client.on('message', (message) => {
         commands.help(message);
     } 
     if (command === "config") {
+        // Add later
         commands.config(message);
     }
     if (command === "cases") {

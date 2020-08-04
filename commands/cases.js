@@ -25,8 +25,8 @@ module.exports = (message) => {
         let overLimit = false;
         let sortedVal = val.sort((a, b) => new Date(b.date) - new Date(a.date))
         sortedVal.map(item => {
-            if (content.length < 1950) {
-                content = content + `${item.suburb} (${item.postcode}) - ${item.date}\n`;
+            if (content.length < 1900) {
+                content = content + `${item.suburb} (${item.postcode}) - ${item.date} - ${convertToAcronym(item.transmission)}\n`;
             } else {
                 overLimit = true;
             }
@@ -56,7 +56,8 @@ async function getCases(postcode, days, radius) {
         if (date >= (Date.now() - (days*24*60*60*1000))) {
             res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${item[2]}.json?access_token=${mapbox_token}&country=au&types=postcode`);
             if (inRadius(radius, res.data.features[0].center[1], res.data.features[0].center[0], center_coords[1], center_coords[0])) {
-                results.push({postcode: item[2], date: item[1], suburb: res.data.features[0].context[0].text });
+                let insertDate = `${new Date(date).getDate()}/${new Date(date).getMonth()+1}`;
+                results.push({postcode: item[2], date: insertDate, transmission: item[3], suburb: res.data.features[0].context[0].text });
             }
         }
     }))
@@ -82,4 +83,16 @@ function inRadius (radius, lat1, long1, lat2, long2) {
 
 function degToRad(deg) {
     return deg * (Math.PI / 180)
+}
+
+function convertToAcronym(input) {
+    if (input.includes("Locally acquired")) {
+        return "LA"
+    }
+    else if (input.includes("Overseas")) {
+        return "O";
+    }
+    else {
+        return "N/A"
+    }
 }

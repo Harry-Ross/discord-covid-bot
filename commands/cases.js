@@ -40,7 +40,7 @@ module.exports = (message) => {
         }
         message.channel.send(content)
     }).catch(e => {
-        message.channel.send(`Error: ${e}`)
+        message.channel.send(`Error: (${e}) - Contact the admin for more information`)
     })
 }
 

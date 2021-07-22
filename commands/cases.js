@@ -17,7 +17,7 @@ module.exports = (message) => {
         return;
     }
     if (!days) {
-        days = 14;
+        days = 7;
     }
     if (!radius) {
         radius = 15;
@@ -49,11 +49,22 @@ module.exports = (message) => {
             return r;
         }, Object.create(null))
 
+        let fields = [];
+
+        for (var element in dataByDate) {
+            let sortedContent = "";
+            dataByDate[element].map((item) => {
+                sortedContent = sortedContent + `${item.suburb} (${item.postcode}) - ${convertToAcronym(item.transmission)}\n`
+            })
+            let dateData = new Date(parseInt(element));
+            fields.push({ name: `${dateData.getDate()}/${dateData.getMonth()}/${dateData.getFullYear()}`, value: sortedContent, inline: true })
+        }
+
         let casesEmbed = new Discord.MessageEmbed()
             .setColor("#eb4034")
             .setAuthor("NSW COVID-19 Cases")
             .setTitle(`COVID cases within ${radius}km of ${postcode} within the last ${days} days`)
-            .setDescription(content)
+            .addFields(fields)
         message.channel.send(casesEmbed)
     }).catch(e => {
         console.error(e)
@@ -76,9 +87,8 @@ async function getCases(postcode, days, radius) {
         let date = Date.parse(item[1]);
         if (date >= (Date.now() - (days*24*60*60*1000))) {
             const suburb = suburbs.filter((suburb) => { return (suburb.postcode == item[2]) })[0]
-            
-            if (inRadius(radius, suburb.latitude, suburb.longitude, center_coords[1], center_coords[0])) {
-                results.push({ postcode: item[2], date: new Date(date), transmission: item[3], suburb: suburb.place_name });
+            if (suburb && inRadius(radius, suburb.latitude, suburb.longitude, center_coords[1], center_coords[0])) {
+                results.push({ postcode: item[2], date, transmission: item[3], suburb: suburb.place_name });
             }
         }
     }))

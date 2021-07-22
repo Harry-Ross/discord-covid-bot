@@ -34,6 +34,7 @@ module.exports = (message) => {
                 overLimit = true;
             }
         })
+
         if (overLimit) {
             content = content + "+ More";
         }
@@ -41,9 +42,17 @@ module.exports = (message) => {
             message.channel.send("No cases, either an error or this is all over...")
             return;
         }
+
+        let dataByDate = sortedVal.reduce(function(r,a) {
+            r[a.date] = r[a.date] || [];
+            r[a.date].push(a);
+            return r;
+        }, Object.create(null))
+
         let casesEmbed = new Discord.MessageEmbed()
             .setColor("#eb4034")
-            .setTitle("NSW COVID-19 Cases")
+            .setAuthor("NSW COVID-19 Cases")
+            .setTitle(`COVID cases within ${radius}km of ${postcode} within the last ${days} days`)
             .setDescription(content)
         message.channel.send(casesEmbed)
     }).catch(e => {
@@ -69,8 +78,7 @@ async function getCases(postcode, days, radius) {
             const suburb = suburbs.filter((suburb) => { return (suburb.postcode == item[2]) })[0]
             
             if (inRadius(radius, suburb.latitude, suburb.longitude, center_coords[1], center_coords[0])) {
-                let insertDate = `${new Date(date).getDate()}/${new Date(date).getMonth()+1}`;
-                results.push({ postcode: item[2], date: insertDate, transmission: item[3], suburb: suburb.place_name });
+                results.push({ postcode: item[2], date: new Date(date), transmission: item[3], suburb: suburb.place_name });
             }
         }
     }))

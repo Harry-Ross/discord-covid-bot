@@ -1,5 +1,7 @@
 require('dotenv').config({ path: '.env' });
 
+const Discord = require('discord.js');
+
 const axios = require('axios');
 const mapbox_token = process.env.MAPBOX_TOKEN;
 
@@ -21,6 +23,7 @@ module.exports = (message) => {
         radius = 15;
     }
     getCases(postcode, days, radius).then((val) => {
+        
         let content = "";
         let overLimit = false;
         let sortedVal = val.sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -38,8 +41,13 @@ module.exports = (message) => {
             message.channel.send("No cases, either an error or this is all over...")
             return;
         }
-        message.channel.send(content)
+        let casesEmbed = new Discord.MessageEmbed()
+            .setColor("#eb4034")
+            .setTitle("NSW COVID-19 Cases")
+            .setDescription(content)
+        message.channel.send(casesEmbed)
     }).catch(e => {
+        console.error(e)
         message.channel.send(`Error: (${e}) - Contact the admin for more information`)
     })
 }
@@ -50,16 +58,19 @@ async function getCases(postcode, days, radius) {
     let res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${postcode}.json?access_token=${mapbox_token}&country=au&types=postcode`);
     const center_coords = res.data.features[0].center;
 
+    let suburbs = require('../postcodes.json')
+
     res = await axios.get('https://data.nsw.gov.au/data/datastore/dump/2776dbb8-f807-4fb2-b1ed-184a6fc2c8aa?format=json');
     let data = res.data.records.reverse();
     let sortedData = data.sort((a, b) => new Date(b[1]) - new Date(a[1]) );
     await Promise.all(sortedData.map(async (item) => {
         let date = Date.parse(item[1]);
         if (date >= (Date.now() - (days*24*60*60*1000))) {
-            res = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${item[2]}.json?access_token=${mapbox_token}&country=au&types=postcode`);
-            if (inRadius(radius, res.data.features[0].center[1], res.data.features[0].center[0], center_coords[1], center_coords[0])) {
+            const suburb = suburbs.filter((suburb) => { return (suburb.postcode == item[2]) })[0]
+            
+            if (inRadius(radius, suburb.latitude, suburb.longitude, center_coords[1], center_coords[0])) {
                 let insertDate = `${new Date(date).getDate()}/${new Date(date).getMonth()+1}`;
-                results.push({postcode: item[2], date: insertDate, transmission: item[3], suburb: res.data.features[0].context[0].text });
+                results.push({ postcode: item[2], date: insertDate, transmission: item[3], suburb: suburb.place_name });
             }
         }
     }))

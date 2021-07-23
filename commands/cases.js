@@ -9,7 +9,7 @@ module.exports = (message) => {
     const args = message.content.slice(1).split(/ +/);
 
     let postcode = args[1];
-    let days = args[2];
+    let days = args[2] + 1;
     let radius = args[3];
 
     if (!postcode) {
@@ -17,31 +17,34 @@ module.exports = (message) => {
         return;
     }
     if (!days) {
-        days = 7;
+        days = 8;
     }
     if (!radius) {
         radius = 15;
     }
     getCases(postcode, days, radius).then((val) => {
         
-        let content = "";
-        let overLimit = false;
+        
         let sortedVal = val.sort((a, b) => new Date(b.date) - new Date(a.date))
-        sortedVal.map(item => {
-            if (content.length < 1900) {
-                content = content + `${item.suburb} (${item.postcode}) - ${item.date} - ${convertToAcronym(item.transmission)}\n`;
-            } else {
-                overLimit = true;
-            }
-        })
+        let amountCases = sortedVal.length;
 
-        if (overLimit) {
-            content = content + "+ More";
-        }
-        if (content.length == 0) {
-            message.channel.send("No cases, either an error or this is all over...")
-            return;
-        }
+        // let content = "";
+        // let overLimit = false;
+        // sortedVal.map(item => {
+        //     if (content.length < 1900) {
+        //         content = content + `${item.suburb} (${item.postcode}) - ${item.date} - ${convertToAcronym(item.transmission)}\n`;
+        //     } else {
+        //         overLimit = true;
+        //     }
+        // })
+
+        // if (overLimit) {
+        //     content = content + "+ More";
+        // }
+        // if (content.length == 0) {
+        //     message.channel.send("No cases, either an error or this is all over...")
+        //     return;
+        // }
 
         let dataByDate = sortedVal.reduce(function(r,a) {
             r[a.date] = r[a.date] || [];
@@ -57,13 +60,13 @@ module.exports = (message) => {
                 sortedContent = sortedContent + `${item.suburb} (${item.postcode}) - ${convertToAcronym(item.transmission)}\n`
             })
             let dateData = new Date(parseInt(element));
-            fields.push({ name: `${dateData.getDate()}/${dateData.getMonth()}/${dateData.getFullYear()}`, value: sortedContent, inline: true })
+            fields.push({ name: `${dateData.getDate()}/${dateData.getMonth()}/${dateData.getFullYear()} - ${dataByDate[element].length} cases`, value: sortedContent, inline: true })
         }
 
         let casesEmbed = new Discord.MessageEmbed()
             .setColor("#eb4034")
             .setAuthor("NSW COVID-19 Cases")
-            .setTitle(`COVID cases within ${radius}km of ${postcode} within the last ${days} days`)
+            .setTitle(`${amountCases} COVID cases within ${radius}km of ${postcode} within the last ${days} days`)
             .addFields(fields)
         message.channel.send(casesEmbed)
     }).catch(e => {

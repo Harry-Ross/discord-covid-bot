@@ -67,6 +67,7 @@ module.exports = (message) => {
             .setColor("#eb4034")
             .setAuthor("NSW COVID-19 Cases")
             .setTitle(`${amountCases} COVID cases within ${radius}km of ${postcode} within the last ${days} days`)
+            .setDescription("LA - Locally acquired\nO - Overseas")
             .addFields(fields)
         message.channel.send(casesEmbed)
     }).catch(e => {

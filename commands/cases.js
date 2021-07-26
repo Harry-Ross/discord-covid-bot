@@ -9,7 +9,7 @@ module.exports = (message) => {
     const args = message.content.slice(1).split(/ +/);
 
     let postcode = args[1];
-    let days = args[2] + 1;
+    let days = args[2];
     let radius = args[3];
 
     if (!postcode) {
@@ -17,7 +17,7 @@ module.exports = (message) => {
         return;
     }
     if (!days) {
-        days = 8;
+        days = 7;
     }
     if (!radius) {
         radius = 15;
@@ -88,7 +88,7 @@ async function getCases(postcode, days, radius) {
     let sortedData = data.sort((a, b) => new Date(b[1]) - new Date(a[1]) );
     await Promise.all(sortedData.map(async (item) => {
         let date = Date.parse(item[1]);
-        if (date >= (Date.now() - (days*24*60*60*1000))) {
+        if (date >= (Date.now() - ((days+1)*24*60*60*1000))) {
             const suburb = suburbs.filter((suburb) => { return (suburb.postcode == item[2]) })[0]
             if (suburb && inRadius(radius, suburb.latitude, suburb.longitude, center_coords[1], center_coords[0])) {
                 results.push({ postcode: item[2], date, transmission: item[3], suburb: suburb.place_name });
